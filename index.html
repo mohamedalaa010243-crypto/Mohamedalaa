@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#020805">
+<title>رسالة من أبو علاء</title>
+<style>
+  :root { --green:#35ff78; --dim:#13a84a; --bg:#020805; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; min-height:100%; background:var(--bg); color:var(--green); font-family:Consolas, "Courier New", monospace; }
+  body { overflow-x:hidden; }
+  #matrix { position:fixed; inset:0; width:100%; height:100%; z-index:0; opacity:.34; pointer-events:none; }
+  .scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.12; background:repeating-linear-gradient(to bottom, transparent 0 3px, #6cff8a 4px); }
+  .vignette { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,.75) 100%); }
+  .wrap { position:relative; z-index:2; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px 14px; }
+  .panel { width:min(100%,620px); border:1px solid var(--dim); background:rgba(0,8,3,.88); box-shadow:0 0 24px rgba(53,255,120,.18), inset 0 0 22px rgba(53,255,120,.04); padding:clamp(20px,5vw,36px); text-align:center; }
+  .topline { direction:ltr; display:flex; justify-content:space-between; gap:12px; color:#8bffa9; font-size:11px; letter-spacing:1px; border-bottom:1px solid #145a2b; padding-bottom:12px; margin-bottom:26px; }
+  .dots { color:#ff5d5d; letter-spacing:4px; }
+  h1 { margin:0 0 8px; font-size:clamp(25px,6vw,40px); text-shadow:0 0 14px rgba(53,255,120,.55); letter-spacing:1px; }
+  .subtitle { font-size:13px; color:#9bcaa8; margin-bottom:28px; direction:ltr; }
+  .prompt { color:#a8ffbb; font-size:13px; margin:18px 0 10px; }
+  input { display:block; width:100%; padding:15px 13px; border:1px solid #238d43; background:#010401; color:#fff; font:inherit; text-align:center; outline:none; border-radius:0; }
+  input:focus { border-color:var(--green); box-shadow:0 0 12px #35ff7840; }
+  button { width:100%; margin-top:13px; padding:14px; border:1px solid var(--green); color:#001b08; background:var(--green); font:700 15px Consolas,monospace; cursor:pointer; letter-spacing:1px; }
+  button:hover { background:#8dffad; }
+  .error { color:#ff6666; min-height:20px; margin-top:12px; font-size:13px; }
+  .status { direction:ltr; color:#6aff91; font-size:12px; margin-top:22px; }
+  .hidden { display:none !important; }
+  .progress-title { font-size:clamp(17px,4vw,22px); margin:12px 0 20px; }
+  .progress-track { width:100%; height:23px; border:1px solid var(--green); padding:3px; background:#001306; }
+  .progress-fill { height:100%; width:0%; background:var(--green); box-shadow:0 0 12px var(--green); transition:width .05s linear; }
+  .percent { direction:ltr; margin-top:10px; font-size:13px; color:#b4ffc6; }
+  #splash { min-height:210px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+  .splash-text { font-size:clamp(30px,8vw,58px); line-height:1.35; font-weight:900; color:#eaffef; text-shadow:0 0 10px #35ff78, 0 0 28px #35ff78; animation:flashFade 1s ease-in-out forwards; }
+  @keyframes flashFade { 0%{opacity:0;transform:scale(.88)} 18%{opacity:1;transform:scale(1)} 65%{opacity:1} 100%{opacity:0;transform:scale(1.05)} }
+  #content h2 { direction:rtl; font-size:clamp(23px,6vw,36px); margin:4px 0 20px; }
+  #content p { color:#c6ffd3; line-height:1.8; font-size:14px; }
+  .image-frame { border:1px solid var(--green); padding:7px; margin:20px 0; box-shadow:0 0 18px #35ff7820; }
+  .image-frame img { display:block; width:100%; max-height:65vh; object-fit:contain; background:#010401; }
+  .image-note { color:#a8ffbb; font-size:12px; line-height:1.7; }
+  .footer { border-top:1px solid #145a2b; padding-top:14px; margin-top:24px; color:#5cae70; font-size:10px; direction:ltr; }
+  .blink { animation:blink 1s steps(2,start) infinite; }
+  @keyframes blink { to { visibility:hidden; } }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas><div class="scanlines"></div><div class="vignette"></div>
+<div class="wrap">
+  <main class="panel">
+    <div class="topline"><span><span class="dots">● ● ●</span> TERMINAL SESSION</span><span>ENCRYPTED // 07</span></div>
+
+    <section id="login">
+      <h1>منظومة أبو علاء</h1>
+      <div class="subtitle">ABO ELAA // SECURE ACCESS TERMINAL</div>
+      <div class="prompt">[ أدخل كلمة السر للمتابعة ]</div>
+      <form id="loginForm">
+        <input id="password" type="password" placeholder="كلمة السر..." autocomplete="off" aria-label="كلمة السر">
+        <button type="submit">[ AUTHENTICATE ]</button>
+      </form>
+      <div id="error" class="error"></div>
+      <div class="status">SYSTEM STATUS: <span class="blink">WAITING FOR AUTHORIZATION</span></div>
+    </section>
+
+    <section id="loading" class="hidden">
+      <h1>ACCESS CHECK</h1>
+      <div class="progress-title">جارٍ تسجيل الدخول...</div>
+      <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+      <div id="percent" class="percent">0%</div>
+      <div class="status">VERIFYING CREDENTIALS // PLEASE WAIT</div>
+    </section>
+
+    <section id="splash" class="hidden">
+      <div class="splash-text">أبو علاء<br>بيمشي عليك</div>
+    </section>
+
+    <section id="content" class="hidden">
+      <div class="status" style="margin-top:0">[ CONNECTION ESTABLISHED ]</div>
+      <div style="direction:ltr;color:#65ff8e;font-size:11px;letter-spacing:2px;margin:16px 0 12px">MESSAGE_DECRYPTED.exe</div>
+      <h2 style="font-size:clamp(32px,8vw,54px);line-height:1.45;text-shadow:0 0 10px #35ff78,0 0 28px #35ff78;margin:18px 0">
+        أبو علاء<br><span style="color:#d9ffe2">بيحبك</span>
+      </h2>
+      <div style="direction:ltr;border:1px solid #145a2b;background:#001306;padding:12px;text-align:left;color:#aaffbc;font-size:12px;line-height:1.9">
+        <div>&gt; decrypting message...</div>
+        <div>&gt; sender: ABO ELAA</div>
+        <div>&gt; status: <span style="color:#35ff78">LOVE CONFIRMED ✓</span></div>
+      </div>
+      <p style="color:#baffc9;font-size:14px;line-height:1.9;margin:20px 0 4px">تم فك التشفير بنجاح ❤️</p>
+      <div class="status">END OF TRANSMISSION <span class="blink">_</span></div>
+    </section>
+
+    <div class="footer">صنع بواسطة MOHAMED ALAA // ALL SYSTEMS NOMINAL</div>
+  </main>
+</div>
+<script>
+  // Animated hacker-style code rain (visual effect only).
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let columns = 0, drops = [], fontSize = 14;
+  const chars = '01アイウエオカキクケコサシスセソタチツテト{}[]<>/\\|=+-*;:ABCDEFGHIJKLMNOPQRSTUVWXYZ$#';
+  function resizeMatrix() {
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    columns = Math.ceil(window.innerWidth / fontSize);
+    drops = Array.from({length:columns}, () => Math.random() * -100);
+  }
+  function drawMatrix() {
+    ctx.fillStyle = 'rgba(0, 8, 3, 0.13)';
+    ctx.fillRect(0,0,window.innerWidth,window.innerHeight);
+    ctx.font = fontSize + 'px Consolas, monospace';
+    for (let i=0; i<drops.length; i++) {
+      const ch = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillStyle = Math.random() > .94 ? '#d5ffe0' : '#20e85b';
+      ctx.fillText(ch, i*fontSize, drops[i]*fontSize);
+      if (drops[i]*fontSize > window.innerHeight && Math.random() > .965) drops[i] = 0;
+      drops[i] += 1.8 + Math.random()*2.8;
+    }
+    requestAnimationFrame(drawMatrix);
+  }
+  resizeMatrix(); drawMatrix(); window.addEventListener('resize', resizeMatrix);
+
+  const form = document.getElementById('loginForm');
+  const password = document.getElementById('password');
+  const error = document.getElementById('error');
+  const login = document.getElementById('login');
+  const loading = document.getElementById('loading');
+  const splash = document.getElementById('splash');
+  const content = document.getElementById('content');
+  const fill = document.getElementById('progressFill');
+  const percent = document.getElementById('percent');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (password.value.trim() !== 'محمد علاء') {
+      error.textContent = 'كلمة السر غير صحيحة — ACCESS DENIED';
+      password.value = '';
+      password.focus();
+      return;
+    }
+    login.classList.add('hidden');
+    loading.classList.remove('hidden');
+    let start = null;
+    function animateProgress(timestamp) {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / 3000, 1);
+      const pct = Math.floor(progress * 100);
+      fill.style.width = pct + '%';
+      percent.textContent = pct + '%';
+      if (progress < 1) {
+        requestAnimationFrame(animateProgress);
+      } else {
+        loading.classList.add('hidden');
+        splash.classList.remove('hidden');
+        window.setTimeout(function() {
+          splash.classList.add('hidden');
+          content.classList.remove('hidden');
+        }, 1000);
+      }
+    }
+    requestAnimationFrame(animateProgress);
+  });
+</script>
+</body>
+</html>
